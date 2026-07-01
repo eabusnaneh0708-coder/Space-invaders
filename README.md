@@ -91,19 +91,6 @@ function createEnemies() {
         }
     }
 }
-    enemies = [];
-    for (let r = 0; r < 5; r++) {
-        for (let c = 0; c < 10; c++) {
-            enemies.push({
-                x: 60 + c * 60,
-                y: 50 + r * 50,
-                w: 40,
-                h: 30,
-                alive: true
-            });
-        }
-    }
-}
 createEnemies();
 
 let keys = {};
@@ -148,7 +135,6 @@ function updateEnemies() {
     enemies.forEach(e => {
         if (!e.alive) return;
 
-        // ENEMY ENTERING ANIMATION
         if (e.entering) {
             e.y += 2;
 
@@ -156,11 +142,9 @@ function updateEnemies() {
                 e.y = e.targetY;
                 e.entering = false;
             }
-
             return;
         }
 
-        // NORMAL MOVEMENT
         e.x += enemySpeed * enemyDir;
 
         if (e.x + e.w > canvas.width || e.x < 0) {
