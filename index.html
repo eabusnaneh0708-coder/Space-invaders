@@ -58,6 +58,17 @@ const ctx = canvas.getContext("2d");
 const scoreEl = document.getElementById("score");
 const livesEl = document.getElementById("lives");
 
+// --- constants (pulled out of magic numbers for readability) ---
+const ENEMY_ROWS = 5;
+const ENEMY_COLS = 10;
+const ENEMY_W = 40;
+const ENEMY_H = 30;
+const ENEMY_ROW_SPACING = 50;
+const ENEMY_COL_SPACING = 60;
+const ENEMY_ENTRY_SPEED = 2;
+const ENEMY_DROP_ON_EDGE = 20;
+const STARTING_LIVES = 3;
+
 let score;
 let lives;
 let gameOver;
@@ -78,7 +89,8 @@ const player = {
 };
 
 document.addEventListener("keydown",e=>{
-    keys[e.key]=true;
+    // Fix: normalize to lowercase so Shift/CapsLock doesn't break movement
+    keys[e.key.toLowerCase()]=true;
 
     if(e.code==="Space"){
         e.preventDefault();
@@ -87,23 +99,26 @@ document.addEventListener("keydown",e=>{
 });
 
 document.addEventListener("keyup",e=>{
-    keys[e.key]=false;
+    keys[e.key.toLowerCase()]=false;
 });
 
 function createEnemies(){
 
     enemies=[];
 
-    for(let row=0;row<5;row++){
+    for(let row=0;row<ENEMY_ROWS;row++){
 
-        for(let col=0;col<10;col++){
+        for(let col=0;col<ENEMY_COLS;col++){
 
             enemies.push({
-                x:60+col*60,
-                y:-250+row*50,
-                targetY:50+row*50,
-                w:40,
-                h:30,
+                x:60+col*ENEMY_COL_SPACING,
+                // Fix: enemies used to start way off-screen (y:-250) which made the
+                // board look empty/broken for the first couple of seconds. Starting
+                // them just above the canvas gives a quick, visible entrance instead.
+                y:-60-row*40,
+                targetY:50+row*ENEMY_ROW_SPACING,
+                w:ENEMY_W,
+                h:ENEMY_H,
                 alive:true,
                 entering:true
             });
@@ -136,8 +151,8 @@ function shoot(){
 
 function updatePlayer(){
 
-    if(keys["ArrowLeft"]||keys["a"]) player.x-=player.speed;
-    if(keys["ArrowRight"]||keys["d"]) player.x+=player.speed;
+    if(keys["arrowleft"]||keys["a"]) player.x-=player.speed;
+    if(keys["arrowright"]||keys["d"]) player.x+=player.speed;
 
     if(player.x<0) player.x=0;
     if(player.x+player.w>canvas.width)
@@ -160,205 +175,3 @@ function updateEnemies(){
     enemies.forEach(enemy=>{
 
         if(!enemy.alive) return;
-
-        if(enemy.entering){
-
-            enemy.y+=2;
-
-            if(enemy.y>=enemy.targetY){
-
-                enemy.y=enemy.targetY;
-                enemy.entering=false;
-
-            }
-
-            return;
-
-        }
-
-        enemy.x+=enemySpeed*enemyDir;
-
-        if(enemy.x<=0||enemy.x+enemy.w>=canvas.width){
-
-            hitEdge=true;
-
-        }
-
-    });
-
-    if(hitEdge){
-
-        enemyDir*=-1;
-
-        enemies.forEach(enemy=>{
-
-            if(enemy.alive&&!enemy.entering){
-
-                enemy.y+=20;
-
-            }
-
-        });
-
-    }
-
-}
-
-function collision(a,b){
-
-    return(
-        a.x<b.x+b.w &&
-        a.x+a.w>b.x &&
-        a.y<b.y+b.h &&
-        a.y+a.h>b.y
-    );
-
-}
-
-function checkCollisions(){
-
-    bullets=bullets.filter(bullet=>{
-
-        let hit=false;
-
-        enemies.forEach(enemy=>{
-
-            if(enemy.alive&&collision(bullet,enemy)){
-
-                enemy.alive=false;
-                score+=10;
-                hit=true;
-
-            }
-
-        });
-
-        return !hit;
-
-    });
-
-    enemies.forEach(enemy=>{
-
-        if(enemy.alive&&enemy.y+enemy.h>=player.y){
-
-            enemy.alive=false;
-            lives--;
-
-            if(lives<=0){
-
-                gameOver=true;
-
-            }
-
-        }
-
-    });
-
-    if(enemies.every(e=>!e.alive)){
-
-        enemySpeed+=0.5;
-        enemyDir=1;
-        createEnemies();
-
-    }
-
-}
-
-function drawPlayer(){
-
-    ctx.fillStyle="lime";
-    ctx.fillRect(player.x,player.y,player.w,player.h);
-
-}
-
-function drawBullets(){
-
-    ctx.fillStyle="red";
-
-    bullets.forEach(b=>{
-
-        ctx.fillRect(b.x,b.y,b.w,b.h);
-
-    });
-
-}
-
-function drawEnemies(){
-
-    ctx.fillStyle="white";
-
-    enemies.forEach(enemy=>{
-
-        if(enemy.alive){
-
-            ctx.fillRect(enemy.x,enemy.y,enemy.w,enemy.h);
-
-        }
-
-    });
-
-}
-
-function drawGameOver(){
-
-    if(!gameOver) return;
-
-    ctx.fillStyle="white";
-    ctx.font="48px Arial";
-    ctx.textAlign="center";
-    ctx.fillText("GAME OVER",canvas.width/2,280);
-
-    ctx.font="24px Arial";
-    ctx.fillText("Press Restart",canvas.width/2,330);
-
-}
-
-function restartGame(){
-
-    score=0;
-    lives=3;
-    gameOver=false;
-
-    enemySpeed=1;
-    enemyDir=1;
-
-    bullets=[];
-
-    player.x=370;
-
-    createEnemies();
-
-}
-
-function gameLoop(){
-
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-    if(!gameOver){
-
-        updatePlayer();
-        updateBullets();
-        updateEnemies();
-        checkCollisions();
-
-    }
-
-    drawPlayer();
-    drawBullets();
-    drawEnemies();
-    drawGameOver();
-
-    scoreEl.textContent=score;
-    livesEl.textContent=lives;
-
-    requestAnimationFrame(gameLoop);
-
-}
-
-restartGame();
-gameLoop();
-
-</script>
-
-</body>
-</html>
