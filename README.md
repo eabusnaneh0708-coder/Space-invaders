@@ -70,9 +70,27 @@ let gameOver = false;
 
 let score = 0;
 let lives = 3;
+let lastShotTime = 0;
+let shootCooldown = 300; // milliseconds
 
 // Create enemies
 function createEnemies() {
+    enemies = [];
+
+    for (let r = 0; r < 5; r++) {
+        for (let c = 0; c < 10; c++) {
+            enemies.push({
+                x: 60 + c * 60,
+                y: -300 + r * 50,
+                targetY: 50 + r * 50,
+                w: 40,
+                h: 30,
+                alive: true,
+                entering: true
+            });
+        }
+    }
+}
     enemies = [];
     for (let r = 0; r < 5; r++) {
         for (let c = 0; c < 10; c++) {
@@ -99,6 +117,12 @@ document.addEventListener("keydown", e => {
 
 function shoot() {
     if (gameOver) return;
+
+    let now = Date.now();
+    if (now - lastShotTime < shootCooldown) return;
+
+    lastShotTime = now;
+
     bullets.push({
         x: player.x + player.w / 2,
         y: player.y,
@@ -119,6 +143,41 @@ function updateBullets() {
 }
 
 function updateEnemies() {
+    let hitEdge = false;
+
+    enemies.forEach(e => {
+        if (!e.alive) return;
+
+        // ENEMY ENTERING ANIMATION
+        if (e.entering) {
+            e.y += 2;
+
+            if (e.y >= e.targetY) {
+                e.y = e.targetY;
+                e.entering = false;
+            }
+
+            return;
+        }
+
+        // NORMAL MOVEMENT
+        e.x += enemySpeed * enemyDir;
+
+        if (e.x + e.w > canvas.width || e.x < 0) {
+            hitEdge = true;
+        }
+    });
+
+    if (hitEdge) {
+        enemyDir *= -1;
+
+        enemies.forEach(e => {
+            if (!e.entering && e.alive) {
+                e.y += 20;
+            }
+        });
+    }
+}
     let hitEdge = false;
 
     enemies.forEach(e => {
